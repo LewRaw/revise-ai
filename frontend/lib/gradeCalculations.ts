@@ -35,6 +35,8 @@ export function getTotalPeriods(system: TermSystem): number {
   }
 }
 
+export const getPeriodsCount = getTotalPeriods;
+
 /**
  * Calcula a média atual com base nas notas lançadas
  */

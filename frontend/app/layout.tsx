@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { ToastProvider } from '@/context/ToastContext';
+import { AuthProvider } from '@/context/AuthContext';
 
 export const metadata: Metadata = {
   title: 'ReviseAI | Estudos de Alta Performance para Ensino Médio',
@@ -29,9 +30,11 @@ export default function RootLayout({
     <html lang="pt-BR" className="dark bg-black">
       <body className="min-h-screen bg-black text-white antialiased selection:bg-[#11C76F] selection:text-black">
         <ToastProvider>
-          <div className="flex flex-col min-h-screen max-w-md md:max-w-3xl lg:max-w-4xl mx-auto px-4 pb-24 pt-4">
-            {children}
-          </div>
+          <AuthProvider>
+            <div className="flex flex-col min-h-screen max-w-md md:max-w-3xl lg:max-w-4xl mx-auto px-4 pb-24 pt-4">
+              {children}
+            </div>
+          </AuthProvider>
         </ToastProvider>
       </body>
     </html>

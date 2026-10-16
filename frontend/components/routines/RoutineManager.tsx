@@ -15,6 +15,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
+import { useAuth } from '@/context/AuthContext';
 import { RoutinePlayerModal, RoutineStepDef } from './RoutinePlayerModal';
 import { 
   loadAgendaEvents, 
@@ -46,9 +47,18 @@ const AVAILABLE_STEP_BLOCKS: { type: RoutineStepDef['type']; label: string; desc
 
 export const RoutineManager: React.FC<RoutineManagerProps> = ({ onScoreGain }) => {
   const { showToast } = useToast();
+  const {
+    currentUser,
+    userSubjects,
+    activeSubject,
+    activeTopic,
+    setActiveSubject,
+    setActiveTopic,
+  } = useAuth();
 
   const [activeRoutine, setActiveRoutine] = useState<StudyRoutinePreset | null>(null);
-  const [selectedSubject, setSelectedSubject] = useState<string>('Física');
+  const selectedSubject = activeSubject;
+  const setSelectedSubject = setActiveSubject;
   const [isPlayerOpen, setIsPlayerOpen] = useState<boolean>(false);
   const [aiPrompt, setAiPrompt] = useState<string>('');
   const [isGeneratingAiRoutine, setIsGeneratingAiRoutine] = useState<boolean>(false);
@@ -117,9 +127,9 @@ export const RoutineManager: React.FC<RoutineManagerProps> = ({ onScoreGain }) =
   const [newAgendaRoutine, setNewAgendaRoutine] = useState<string>('Dia Normal');
 
   useEffect(() => {
-    setScheduledDays(loadAgendaEvents());
-    setAtRiskSubjects(getAtRiskSubjectsFromGradebook());
-  }, []);
+    setScheduledDays(loadAgendaEvents(currentUser.id));
+    setAtRiskSubjects(getAtRiskSubjectsFromGradebook(currentUser.id));
+  }, [currentUser.id]);
 
   const handleStartRoutine = (preset: StudyRoutinePreset) => {
     setActiveRoutine(preset);
@@ -133,7 +143,7 @@ export const RoutineManager: React.FC<RoutineManagerProps> = ({ onScoreGain }) =
         : item
     );
     setScheduledDays(updated);
-    saveAgendaEvents(updated);
+    saveAgendaEvents(updated, currentUser.id);
     showToast('Status da agenda atualizado!', 'success');
   };
 
@@ -147,7 +157,7 @@ export const RoutineManager: React.FC<RoutineManagerProps> = ({ onScoreGain }) =
     };
     const updated = [...scheduledDays, newItem];
     setScheduledDays(updated);
-    saveAgendaEvents(updated);
+    saveAgendaEvents(updated, currentUser.id);
     showToast(`Sessão de ${selectedSubject} agendada para ${newAgendaDay}!`, 'success');
   };
 
@@ -213,6 +223,9 @@ export const RoutineManager: React.FC<RoutineManagerProps> = ({ onScoreGain }) =
     }, 1000);
   };
 
+  const activeSubjectObj =
+    userSubjects.find((s) => s.name === selectedSubject) || userSubjects[0];
+
   return (
     <section className="space-y-5 animate-in fade-in duration-200">
       {/* Top Header */}
@@ -220,7 +233,7 @@ export const RoutineManager: React.FC<RoutineManagerProps> = ({ onScoreGain }) =
         <div>
           <h2 className="text-base font-bold text-white">⚡ Rotinas de Estudo & Agenda</h2>
           <p className="text-xs text-[#8E8E93] mt-0.5">
-            Escolha seu modo de estudo guiado ou monte sua própria sequência
+            Escolha sua disciplina, selecione o conteúdo e inicie sua rotina guiada
           </p>
         </div>
         <button
@@ -258,27 +271,52 @@ export const RoutineManager: React.FC<RoutineManagerProps> = ({ onScoreGain }) =
         </div>
       )}
 
-      {/* Seletor de Disciplina em Foco */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-        {['Física', 'Matemática', 'Química', 'Biologia', 'História'].map((subj) => (
-          <button
-            key={subj}
-            onClick={() => setSelectedSubject(subj)}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all min-h-[44px] ${
-              selectedSubject === subj
-                ? 'bg-[#11C76F] text-black shadow-md shadow-[#11C76F]/20'
-                : 'bg-[#141414] text-[#8E8E93] border border-[#262626] hover:text-white'
-            }`}
-          >
-            {subj}
-          </button>
-        ))}
+      {/* Seletor de Disciplina e Conteúdo em Foco */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          {userSubjects.map((subj) => (
+            <button
+              key={subj.id}
+              onClick={() => setSelectedSubject(subj.name)}
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all min-h-[44px] flex items-center gap-1.5 ${
+                selectedSubject === subj.name
+                  ? 'bg-[#11C76F] text-black shadow-md shadow-[#11C76F]/20'
+                  : 'bg-[#141414] text-[#8E8E93] border border-[#262626] hover:text-white'
+              }`}
+            >
+              <span>{subj.icon}</span>
+              <span>{subj.name}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Seletor de Conteúdo/Tópico da Disciplina Ativa */}
+        {activeSubjectObj && activeSubjectObj.topics.length > 0 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            <span className="text-[11px] text-[#8E8E93] font-medium shrink-0 pr-1">
+              Conteúdo:
+            </span>
+            {activeSubjectObj.topics.map((top) => (
+              <button
+                key={top.id}
+                onClick={() => setActiveTopic(top.title)}
+                className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap border transition-all min-h-[34px] ${
+                  activeTopic === top.title
+                    ? 'bg-[#11C76F]/15 border-[#11C76F] text-[#11C76F]'
+                    : 'bg-[#141414] border-[#262626] text-[#8E8E93] hover:text-white'
+                }`}
+              >
+                {top.title}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Cards de Modos de Estudo Pré-Configurados */}
       <div className="space-y-3">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-[#8E8E93]">
-          Modos de Estudo ({selectedSubject})
+          Modos de Estudo ({selectedSubject} • {activeTopic})
         </h3>
 
         <div className="grid grid-cols-1 gap-3">

@@ -10,6 +10,7 @@ import {
   Calculator
 } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
+import { useAuth } from '@/context/AuthContext';
 import { 
   TermSystem, 
   SubjectPeriodGrade, 
@@ -25,6 +26,7 @@ import {
 
 export const GradebookView: React.FC = () => {
   const { showToast } = useToast();
+  const { currentUser, userSubjects } = useAuth();
 
   const [termSystem, setTermSystem] = useState<TermSystem>('bimestral');
   const [passingGrade, setPassingGrade] = useState<number>(6.0);
@@ -44,12 +46,12 @@ export const GradebookView: React.FC = () => {
   const [workWeight, setWorkWeight] = useState<string>('1');
 
   useEffect(() => {
-    const saved = loadGradebookState();
+    const saved = loadGradebookState(currentUser.id);
     setTermSystem(saved.termSystem);
     setPassingGrade(saved.passingGrade);
     setUseWeights(saved.useWeights);
     setSubjects(saved.subjects);
-  }, []);
+  }, [currentUser.id, userSubjects.length]);
 
   const persistState = (
     nextSystem: TermSystem,
@@ -57,12 +59,15 @@ export const GradebookView: React.FC = () => {
     nextWeights: boolean,
     nextSubjects: StoredSubjectEntry[]
   ) => {
-    saveGradebookState({
-      termSystem: nextSystem,
-      passingGrade: nextPassing,
-      useWeights: nextWeights,
-      subjects: nextSubjects,
-    });
+    saveGradebookState(
+      {
+        termSystem: nextSystem,
+        passingGrade: nextPassing,
+        useWeights: nextWeights,
+        subjects: nextSubjects,
+      },
+      currentUser.id
+    );
   };
 
   const totalPeriods = getTotalPeriods(termSystem);

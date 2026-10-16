@@ -1,6 +1,6 @@
 /**
- * Banco Estruturado de Questões, Resumos e Temas Dissertativos (Ensino Médio & ENEM)
- * Alimenta os Simulados, o Player de Rotinas Guiadas e os Resumos Focais.
+ * Banco Estruturado & Gerador Dinâmico Multi-Disciplinas e Multi-Conteúdos (SaaS)
+ * Suporta disciplinas padrão do Ensino Médio/ENEM e qualquer disciplina/conteúdo customizado pelo estudante.
  */
 
 export interface BankQuestion {
@@ -21,6 +21,7 @@ export interface BankQuestion {
 export interface SubjectStudyData {
   subject: string;
   defaultTopic: string;
+  suggestedTopics: string[];
   generalSummary: {
     definition: string;
     formulaOrRule: string;
@@ -34,6 +35,12 @@ export const SUBJECT_STUDY_BANK: Record<string, SubjectStudyData> = {
   'Física': {
     subject: 'Física',
     defaultTopic: 'Termodinâmica & Conservação de Energia',
+    suggestedTopics: [
+      'Termodinâmica & Conservação de Energia',
+      'Cinemática & Leis de Newton',
+      'Eletrodinâmica & Circuitos Elétricos',
+      'Ondulatória & Óptica Geométrica'
+    ],
     generalSummary: {
       definition: 'As leis da Termodinâmica descrevem como o calor (Q), o trabalho mecânico (W) e a energia interna (ΔU) interagem em sistemas físicos.',
       formulaOrRule: '1ª Lei: ΔU = Q - W  |  Rendimento de Carnot: η = 1 - (T_fria / T_quente)',
@@ -44,7 +51,7 @@ export const SUBJECT_STUDY_BANK: Record<string, SubjectStudyData> = {
       {
         id: 'fis_1',
         subject: 'Física',
-        topic: 'Primeira Lei da Termodinâmica',
+        topic: 'Termodinâmica & Conservação de Energia',
         difficulty: 'fácil',
         text: 'Na Primeira Lei da Termodinâmica (ΔU = Q - W), se um gás ideal sofre uma transformação isotérmica e realiza 300 J de trabalho, quanto de calor ele trocou com o meio?',
         options: [
@@ -57,7 +64,7 @@ export const SUBJECT_STUDY_BANK: Record<string, SubjectStudyData> = {
       {
         id: 'fis_2',
         subject: 'Física',
-        topic: 'Segunda Lei da Termodinâmica',
+        topic: 'Termodinâmica & Conservação de Energia',
         difficulty: 'médio',
         text: 'Qual das alternativas descreve corretamente a Segunda Lei da Termodinâmica (Enunciado de Clausius)?',
         options: [
@@ -70,7 +77,7 @@ export const SUBJECT_STUDY_BANK: Record<string, SubjectStudyData> = {
       {
         id: 'fis_3',
         subject: 'Física',
-        topic: 'Transformação Adiabática',
+        topic: 'Termodinâmica & Conservação de Energia',
         difficulty: 'médio',
         text: 'Ao pressionar a válvula de um desodorante aerossol, o gás expande muito rapidamente e o frasco esfria. Esse resfriamento ocorre porque a expansão é:',
         options: [
@@ -83,20 +90,7 @@ export const SUBJECT_STUDY_BANK: Record<string, SubjectStudyData> = {
       {
         id: 'fis_4',
         subject: 'Física',
-        topic: 'Ciclo de Carnot',
-        difficulty: 'difícil',
-        text: 'Uma máquina térmica ideal de Carnot opera entre uma fonte quente a 400 K e uma fonte fria a 300 K. Qual é o seu rendimento máximo teórico?',
-        options: [
-          { letter: 'A', text: '25%', isCorrect: true, explanation: 'Correto! η = 1 - (300 / 400) = 1 - 0,75 = 0,25 (ou 25%).' },
-          { letter: 'B', text: '75%', isCorrect: false, explanation: 'Incorreto. 75% é a fração rejeitada para a fonte fria (300/400).' },
-          { letter: 'C', text: '33%', isCorrect: false, explanation: 'Incorreto. Deve-se dividir T_fria por T_quente (300/400).' },
-          { letter: 'D', text: '100%', isCorrect: false, explanation: 'Incorreto. Rendimento de 100% violaria a 2ª Lei da Termodinâmica.' },
-        ]
-      },
-      {
-        id: 'fis_5',
-        subject: 'Física',
-        topic: 'Potência e Energia Elétrica',
+        topic: 'Eletrodinâmica & Circuitos Elétricos',
         difficulty: 'fácil',
         text: 'Um chuveiro elétrico de potência 4400 W é utilizado durante 15 minutos (0,25 h) por dia. Qual é o consumo diário de energia elétrica em kWh?',
         options: [
@@ -111,6 +105,12 @@ export const SUBJECT_STUDY_BANK: Record<string, SubjectStudyData> = {
   'Matemática': {
     subject: 'Matemática',
     defaultTopic: 'Funções, Geometria & Análise Combinatória',
+    suggestedTopics: [
+      'Funções, Geometria & Análise Combinatória',
+      'Matemática Financeira & Porcentagem',
+      'Probabilidade & Estatística ENEM',
+      'Trigonometria & Geometria Espacial'
+    ],
     generalSummary: {
       definition: 'Funções descrevem relações de dependência entre grandezas: a função afim modela crescimento linear e a quadrática modela trajetórias parabólicas e otimização (máximos/mínimos).',
       formulaOrRule: 'Afim: f(x) = ax + b  |  Vértice da Parábola: Xv = -b / (2a), Yv = -Δ / (4a)',
@@ -121,7 +121,7 @@ export const SUBJECT_STUDY_BANK: Record<string, SubjectStudyData> = {
       {
         id: 'mat_1',
         subject: 'Matemática',
-        topic: 'Função Quadrática (Máximos e Mínimos)',
+        topic: 'Funções, Geometria & Análise Combinatória',
         difficulty: 'médio',
         text: 'O lucro mensal L(x) de uma startup, em milhares de reais, em função do preço x de assinatura é dado por L(x) = -x² + 20x - 60. Qual deve ser o preço x para que o lucro seja máximo?',
         options: [
@@ -134,7 +134,7 @@ export const SUBJECT_STUDY_BANK: Record<string, SubjectStudyData> = {
       {
         id: 'mat_2',
         subject: 'Matemática',
-        topic: 'Probabilidade e Combinatória',
+        topic: 'Probabilidade & Estatística ENEM',
         difficulty: 'fácil',
         text: 'Em uma sala de Ensino Médio com 40 alunos, 24 praticam esportes e 16 tocam algum instrumento musical, sendo que 8 fazem ambos. Escolhendo um aluno ao acaso, qual a probabilidade de ele praticar esporte OU tocar instrumento?',
         options: [
@@ -147,7 +147,7 @@ export const SUBJECT_STUDY_BANK: Record<string, SubjectStudyData> = {
       {
         id: 'mat_3',
         subject: 'Matemática',
-        topic: 'Escalas e Proporcionalidade',
+        topic: 'Funções, Geometria & Análise Combinatória',
         difficulty: 'médio',
         text: 'Em uma maquete na escala 1:50, a área do piso de uma quadra poliesportiva mede 200 cm². Qual é a área real dessa quadra em metros quadrados (m²)?',
         options: [
@@ -156,38 +156,18 @@ export const SUBJECT_STUDY_BANK: Record<string, SubjectStudyData> = {
           { letter: 'C', text: '500 m²', isCorrect: false, explanation: 'Incorreto. Cuidado na conversão de cm² para m² (dividir por 10.000).' },
           { letter: 'D', text: '100 m²', isCorrect: false, explanation: 'Incorreto. 500.000 cm² dividido por 10.000 equivale a 50 m².' },
         ]
-      },
-      {
-        id: 'mat_4',
-        subject: 'Matemática',
-        topic: 'Estatística (Média, Moda e Mediana)',
-        difficulty: 'fácil',
-        text: 'As notas de um estudante em 5 simulados foram: 6, 8, 5, 9 e 7. Qual é a mediana dessas notas?',
-        options: [
-          { letter: 'A', text: '7', isCorrect: true, explanation: 'Correto! Ordenando o rol: [5, 6, 7, 8, 9], o termo central é 7.' },
-          { letter: 'B', text: '5', isCorrect: false, explanation: 'Incorreto. Antes de pegar o termo do meio, é obrigatório ordenar os valores em ordem crescente!' },
-          { letter: 'C', text: '8', isCorrect: false, explanation: 'Incorreto. O valor central após ordenar [5, 6, 7, 8, 9] é 7.' },
-          { letter: 'D', text: '6,5', isCorrect: false, explanation: 'Incorreto. Como há 5 termos (ímpar), a mediana é exatamente o 3º termo ordenado.' },
-        ]
-      },
-      {
-        id: 'mat_5',
-        subject: 'Matemática',
-        topic: 'Trigonometria no Triângulo Retângulo',
-        difficulty: 'médio',
-        text: 'Uma rampa de acessibilidade forma um ângulo de 30° com o solo horizontal e atinge uma altura vertical de 1,5 m. Qual é o comprimento da rampa? (Dado: sen 30° = 0,5)',
-        options: [
-          { letter: 'A', text: '3,0 m', isCorrect: true, explanation: 'Correto! sen 30° = cateto oposto / hipotenusa -> 0,5 = 1,5 / L -> L = 3,0 m.' },
-          { letter: 'B', text: '0,75 m', isCorrect: false, explanation: 'Incorreto. A hipotenusa sempre é maior que os catetos.' },
-          { letter: 'C', text: '4,5 m', isCorrect: false, explanation: 'Incorreto. 1,5 dividido por 0,5 resulta em 3,0 m.' },
-          { letter: 'D', text: '1,5 m', isCorrect: false, explanation: 'Incorreto. O comprimento da rampa é o dobro da altura para 30°.' },
-        ]
       }
     ]
   },
   'Química': {
     subject: 'Química',
     defaultTopic: 'Estequiometria, Eletroquímica & Equilíbrio',
+    suggestedTopics: [
+      'Estequiometria, Eletroquímica & Equilíbrio',
+      'Química Orgânica & Funções Oxigenadas',
+      'Termoquímica & Cinética Química',
+      'Ligações Químicas & Forças Intermoleculares'
+    ],
     generalSummary: {
       definition: 'A Eletroquímica estuda a conversão entre energia química e elétrica (Pilhas espontâneas vs. Eletrólise não-espontânea), enquanto o Equilíbrio Químico analisa reações reversíveis.',
       formulaOrRule: 'Pilha (CRAO): Cátodo Reduz, Ânodo Oxida  |  ΔE° = E°maior - E°menor > 0',
@@ -198,7 +178,7 @@ export const SUBJECT_STUDY_BANK: Record<string, SubjectStudyData> = {
       {
         id: 'qui_1',
         subject: 'Química',
-        topic: 'Eletroquímica (Pilhas)',
+        topic: 'Estequiometria, Eletroquímica & Equilíbrio',
         difficulty: 'médio',
         text: 'Em uma pilha de Daniell formada por eletrodos de Zinco (E°red = -0,76 V) e Cobre (E°red = +0,34 V), o que ocorre durante o funcionamento espontâneo?',
         options: [
@@ -211,7 +191,7 @@ export const SUBJECT_STUDY_BANK: Record<string, SubjectStudyData> = {
       {
         id: 'qui_2',
         subject: 'Química',
-        topic: 'pH e Equilíbrio Iônico',
+        topic: 'Estequiometria, Eletroquímica & Equilíbrio',
         difficulty: 'fácil',
         text: 'Um suco cítrico apresenta concentração de íons H⁺ igual a 10⁻³ mol/L a 25 °C. Qual é o valor do pH dessa solução e sua classificação?',
         options: [
@@ -220,25 +200,18 @@ export const SUBJECT_STUDY_BANK: Record<string, SubjectStudyData> = {
           { letter: 'C', text: 'pH = 7 (Neutra)', isCorrect: false, explanation: 'Incorreto. Solução neutra possui [H⁺] = 10⁻⁷ mol/L.' },
           { letter: 'D', text: 'pH = -3 (Ácida)', isCorrect: false, explanation: 'Incorreto. A definição tem sinal negativo (-log), tornando o resultado positivo.' },
         ]
-      },
-      {
-        id: 'qui_3',
-        subject: 'Química',
-        topic: 'Interações Intermoleculares',
-        difficulty: 'fácil',
-        text: 'A água (H₂O) possui ponto de ebulição (100 °C) muito superior ao do sulfeto de hidrogênio (H₂S, -60 °C), apesar de ter menor massa molar. Isso se explica principalmente pelas:',
-        options: [
-          { letter: 'A', text: 'Ligações de hidrogênio intensas entre as moléculas de água.', isCorrect: true, explanation: 'Exato! O hidrogênio ligado ao oxigênio (F, O, N) forma ligações de hidrogênio de alta intensidade.' },
-          { letter: 'B', text: 'Ligações iônicas presentes na molécula de H₂O.', isCorrect: false, explanation: 'Incorreto. A ligação O-H é covalente polar, não iônica.' },
-          { letter: 'C', text: 'Forças de dipolo induzido predominantes na água.', isCorrect: false, explanation: 'Incorreto. Dipolo induzido predomina em moléculas apolares.' },
-          { letter: 'D', text: 'Quebras das ligações covalentes intramoleculares durante a fervura.', isCorrect: false, explanation: 'Incorreto. A ebulição rompe apenas forças intermoleculares, não a molécula.' },
-        ]
       }
     ]
   },
   'Biologia': {
     subject: 'Biologia',
     defaultTopic: 'Bioenergética, Ecologia & Genética',
+    suggestedTopics: [
+      'Bioenergética, Ecologia & Genética',
+      'Citologia & Membrana Plasmática',
+      'Fisiologia Humana & Imunologia',
+      'Evolução Biológica & Biotecnologia'
+    ],
     generalSummary: {
       definition: 'A Fotossíntese converte energia luminosa em energia química (glicose) nos cloroplastos, enquanto a Respiração Celular degrada glicose nas mitocôndrias para gerar ATP.',
       formulaOrRule: 'Fotossíntese: 6 CO₂ + 6 H₂O + Luz → C₆H₁₂O₆ + 6 O₂ (O₂ vem da fotólise da água!)',
@@ -249,7 +222,7 @@ export const SUBJECT_STUDY_BANK: Record<string, SubjectStudyData> = {
       {
         id: 'bio_1',
         subject: 'Biologia',
-        topic: 'Fotossíntese e Bioenergética',
+        topic: 'Bioenergética, Ecologia & Genética',
         difficulty: 'médio',
         text: 'Experimentos utilizando isótopos marcados de oxigênio (¹⁸O) comprovaram que o gás oxigênio (O₂) liberado para a atmosfera durante a fotossíntese provém diretamente da:',
         options: [
@@ -262,20 +235,7 @@ export const SUBJECT_STUDY_BANK: Record<string, SubjectStudyData> = {
       {
         id: 'bio_2',
         subject: 'Biologia',
-        topic: 'Ecologia (Eutrofização)',
-        difficulty: 'fácil',
-        text: 'O despejo excessivo de fertilizantes agrícolas ricos em nitratos e fosfatos em um lago fechado desencadeia a proliferação de algas na superfície e a morte de peixes. A morte dos peixes ocorre diretamente por:',
-        options: [
-          { letter: 'A', text: 'Queda drástica do oxigênio dissolvido devido à proliferação de bactérias decompositoras aeróbicas.', isCorrect: true, explanation: 'Exato! O bloqueio da luz mata a vegetação submersa; bactérias aeróbicas se multiplicam e consomem todo o O₂ da água.' },
-          { letter: 'B', text: 'Intoxicação direta dos peixes pelo nitrogênio gasoso.', isCorrect: false, explanation: 'Incorreto. A causa letal no processo de eutrofização é a anóxia/hipóxia (falta de O₂).' },
-          { letter: 'C', text: 'Aumento exagerado da fotossíntese no fundo do lago.', isCorrect: false, explanation: 'Incorreto. A camada superficial de algas impede a entrada de luz no fundo.' },
-          { letter: 'D', text: 'Congelamento térmico da coluna de água.', isCorrect: false, explanation: 'Incorreto. Não há congelamento induzido por nutrientes.' },
-        ]
-      },
-      {
-        id: 'bio_3',
-        subject: 'Biologia',
-        topic: 'Imunologia (Vacinas vs. Soros)',
+        topic: 'Fisiologia Humana & Imunologia',
         difficulty: 'fácil',
         text: 'Qual é a diferença fundamental entre a atuação imunológica de uma vacina e a de um soro antiofídico?',
         options: [
@@ -290,6 +250,12 @@ export const SUBJECT_STUDY_BANK: Record<string, SubjectStudyData> = {
   'História': {
     subject: 'História',
     defaultTopic: 'Era Vargas, Brasil República & Revoluções',
+    suggestedTopics: [
+      'Era Vargas, Brasil República & Revoluções',
+      'Brasil Colônia & Segundo Reinado',
+      'Iluminismo & Revolução Francesa',
+      'Guerra Fria & Mundo Contemporâneo'
+    ],
     generalSummary: {
       definition: 'A Era Vargas (1930-1945) marcou a transição do modelo agroexportador oligárquico para a industrialização por substituição de importações e a criação da legislação trabalhista (CLT).',
       formulaOrRule: 'Fases: Governo Provisório (30-34) → Constitucional (34-37) → Estado Novo Ditatorial (37-45)',
@@ -300,7 +266,7 @@ export const SUBJECT_STUDY_BANK: Record<string, SubjectStudyData> = {
       {
         id: 'his_1',
         subject: 'História',
-        topic: 'Era Vargas e Trabalhismo',
+        topic: 'Era Vargas, Brasil República & Revoluções',
         difficulty: 'médio',
         text: 'Durante o Estado Novo (1937-1945), a promulgação da CLT por Getúlio Vargas representou para a classe trabalhadora urbana brasileira:',
         options: [
@@ -309,33 +275,235 @@ export const SUBJECT_STUDY_BANK: Record<string, SubjectStudyData> = {
           { letter: 'C', text: 'A extensão imediata dos direitos trabalhistas a todos os trabalhadores rurais.', isCorrect: false, explanation: 'Incorreto. O trabalhador rural só foi contemplado décadas depois (Estatuto do Trabalhador Rural em 1963).' },
           { letter: 'D', text: 'O abandono da industrialização de base em favor do café.', isCorrect: false, explanation: 'Incorreto. Vargas impulsionou a indústria de base (CSN e Vale do Rio Doce).' },
         ]
-      },
+      }
+    ]
+  },
+  'Geografia': {
+    subject: 'Geografia',
+    defaultTopic: 'Geopolítica, Urbanização & Climatologia',
+    suggestedTopics: [
+      'Geopolítica, Urbanização & Climatologia',
+      'Globalização & Blocos Econômicos',
+      'Domínios Morfoclimáticos do Brasil',
+      'Demografia & Migrações'
+    ],
+    generalSummary: {
+      definition: 'A Geografia analisa a relação entre espaço geográfico, dinâmicas climáticas/ambientais (Domínios de Ab’Sáber) e transformações socioeconômicas urbanas e agrárias.',
+      formulaOrRule: 'Inversão Térmica = retenção de poluentes no inverno | Ilha de Calor = impermeabilização e concreto urbano',
+      enemTip: 'Diferencie Ilha de Calor (fenômeno antrópico contínuo nas metrópoles) de Inversão Térmica (fenômeno natural agravado pela poluição em dias frios).'
+    },
+    descriptivePrompt: 'Explique as causas e consequências ambientais do processo de arenização e desertificação nos domínios morfoclimáticos brasileiros.',
+    questions: [
       {
-        id: 'his_2',
-        subject: 'História',
-        topic: 'Iluminismo e Revolução Francesa',
+        id: 'geo_1',
+        subject: 'Geografia',
+        topic: 'Geopolítica, Urbanização & Climatologia',
         difficulty: 'fácil',
-        text: 'A Declaração dos Direitos do Homem e do Cidadão (1789), marco da Revolução Francesa, inspirou-se diretamente nos princípios iluministas ao defender:',
+        text: 'Nas grandes metrópoles brasileiras durante o inverno, o ar frio e denso permanece próximo à superfície, impedindo a dispersão vertical de poluentes. Esse fenômeno é denominado:',
         options: [
-          { letter: 'A', text: 'A igualdade jurídica perante a lei, a liberdade individual e o direito à propriedade.', isCorrect: true, explanation: 'Exato! Rompeu com os privilégios feudais de nascimento do clero e da nobreza (Antigo Regime).' },
-          { letter: 'B', text: 'O direito divino dos reis e o fortalecimento do absolutismo monárquico.', isCorrect: false, explanation: 'Incorreto. A revolução derrubou justamente o absolutismo.' },
-          { letter: 'C', text: 'A abolição imediata da propriedade privada na França de 1789.', isCorrect: false, explanation: 'Incorreto. A Revolução Francesa foi uma revolução burguesa que consagrou a propriedade privada.' },
-          { letter: 'D', text: 'A manutenção da isenção de impostos para o Primeiro e Segundo Estados.', isCorrect: false, explanation: 'Incorreto. Os privilgios fiscais de clero e nobreza foram extintos.' },
+          { letter: 'A', text: 'Inversão térmica.', isCorrect: true, explanation: 'Correto! O ar frio estacionado na base impede a convecção natural, retendo a camada de poluentes.' },
+          { letter: 'B', text: 'Chuva ácida.', isCorrect: false, explanation: 'Incorreto. Chuva ácida resulta da reação de óxidos de enxofre e nitrogênio com a água na atmosfera.' },
+          { letter: 'C', text: 'Efeito estufa global.', isCorrect: false, explanation: 'Incorreto. O efeito estufa é a retenção de radiação infravermelha por gases na atmosfera.' },
+          { letter: 'D', text: 'El Niño.', isCorrect: false, explanation: 'Incorreto. El Niño é o aquecimento anormal das águas superficiais do Oceano Pacífico Equatorial.' },
+        ]
+      }
+    ]
+  },
+  'Redação & Linguagens': {
+    subject: 'Redação & Linguagens',
+    defaultTopic: 'Estrutura Dissertativo-Argumentativa & Funções da Linguagem',
+    suggestedTopics: [
+      'Estrutura Dissertativo-Argumentativa & Competências ENEM',
+      'Funções da Linguagem & Figuras de Estilo',
+      'Modernismo Brasileiro (1ª, 2ª e 3ª Gerações)',
+      'Variação Linguística & Interpretação Textual'
+    ],
+    generalSummary: {
+      definition: 'A Redação do ENEM avalia 5 competências (0 a 200 pts cada), exigindo tese clara, repertório sociocultural produtivo e Proposta de Intervenção com 5 elementos obrigatórios.',
+      formulaOrRule: '5 Elementos da Competência 5: Agente + Ação + Meio/Modo + Efeito + Detalhamento',
+      enemTip: 'Nunca esqueça de detalhar pelo menos um dos 4 elementos principais na conclusão (usando aposto explicativo ou exemplificação) para garantir 200 pontos na Competência 5.'
+    },
+    descriptivePrompt: 'Elabore um parágrafo de conclusão (Proposta de Intervenção) contendo os 5 elementos obrigatórios do ENEM sobre a democratização do acesso à tecnologia na educação pública.',
+    questions: [
+      {
+        id: 'red_1',
+        subject: 'Redação & Linguagens',
+        topic: 'Estrutura Dissertativo-Argumentativa & Competências ENEM',
+        difficulty: 'fácil',
+        text: 'Para atingir a nota máxima (200 pontos) na Competência 5 da Redação do ENEM, a proposta de intervenção deve apresentar obrigatoriamente:',
+        options: [
+          { letter: 'A', text: '5 elementos: Agente, Ação, Meio/Modo, Efeito e Detalhamento, respeitando os direitos humanos.', isCorrect: true, explanation: 'Perfeito! A ausência de qualquer um dos 5 elementos reduz a nota da Competência 5.' },
+          { letter: 'B', text: 'Apenas uma frase motivacional apelando para a conscientização individual.', isCorrect: false, explanation: 'Incorreto. Propostas vagas ("conscientizar a população") sem meio/modo e detalhamento perdem pontos.' },
+          { letter: 'C', text: 'Citação obrigatória de três filósofos gregos no último parágrafo.', isCorrect: false, explanation: 'Incorreto. O repertório sociocultural pertence à Competência 2 (desenvolvimento).' },
+          { letter: 'D', text: 'Um título centralizado na primeira linha da folha de redação.', isCorrect: false, explanation: 'Incorreto. No ENEM, o título é opcional e não pontua.' },
         ]
       }
     ]
   }
 };
 
-export function getQuestionsBySubject(subject: string, count?: number): BankQuestion[] {
-  const bank = SUBJECT_STUDY_BANK[subject] || SUBJECT_STUDY_BANK['Física'];
-  const list = bank.questions.map((q) => ({ ...q, selectedLetter: undefined }));
+/**
+ * Gera dados de estudo estruturados e questões contextualizadas para QUALQUER disciplina
+ * e QUALQUER conteúdo/tópico (inclusive disciplinas e conteúdos customizados criados pelo aluno).
+ */
+export function getDynamicStudyDataForTopic(
+  subject: string,
+  topicTitle?: string,
+  customSummaryText?: string
+): SubjectStudyData {
+  const existingBank = SUBJECT_STUDY_BANK[subject];
+  const resolvedTopic = topicTitle?.trim() || existingBank?.defaultTopic || `Fundamentos de ${subject}`;
+
+  // Se a disciplina existe no banco padrão e o tópico é o padrão (ou não há customização específica),
+  // filtramos ou adaptamos as questões para o tópico selecionado
+  if (existingBank && (!topicTitle || topicTitle === existingBank.defaultTopic)) {
+    return existingBank;
+  }
+
+  // Gera questões contextualizadas dinamicamente para o tópico específico ou disciplina customizada
+  const slug = `${subject}_${resolvedTopic}`.replace(/\s+/g, '_').toLowerCase().slice(0, 20);
+  const dynamicQuestions: BankQuestion[] = [
+    {
+      id: `dyn_${slug}_1`,
+      subject,
+      topic: resolvedTopic,
+      difficulty: 'fácil',
+      text: `No estudo de ${subject}, considerando especificamente o tema "${resolvedTopic}", qual é o princípio fundamental para resolver questões de prova com segurança?`,
+      options: [
+        {
+          letter: 'A',
+          text: `Identificar os conceitos-chave de ${resolvedTopic}, relacionando a definição teórica com sua aplicação prática no contexto do enunciado.`,
+          isCorrect: true,
+          explanation: `Correto! O domínio de "${resolvedTopic}" em ${subject} exige conectar o conceito base diretamente à situação-problema apresentada.`
+        },
+        {
+          letter: 'B',
+          text: `Memorizar termos isolados de ${resolvedTopic} sem analisar as condições de contorno do problema.`,
+          isCorrect: false,
+          explanation: 'Incorreto. Provas modernas cobram interpretação contextualizada e causa-efeito, não decoreba isolada.'
+        },
+        {
+          letter: 'C',
+          text: 'Desconsiderar as variáveis principais do enunciado e aplicar apenas regras de outras áreas.',
+          isCorrect: false,
+          explanation: 'Incorreto. Os dados do comando da questão são indispensáveis para a resolução.'
+        },
+        {
+          letter: 'D',
+          text: `Assumir que ${resolvedTopic} não possui relação com os demais tópicos de ${subject}.`,
+          isCorrect: false,
+          explanation: 'Incorreto. Os conteúdos são cumulativos e interdisciplinares.'
+        }
+      ]
+    },
+    {
+      id: `dyn_${slug}_2`,
+      subject,
+      topic: resolvedTopic,
+      difficulty: 'médio',
+      text: `Ao analisar uma situação prática envolvendo "${resolvedTopic}" (${subject}), qual é a pegadinha mais recorrente em exames e vestibulares?`,
+      options: [
+        {
+          letter: 'A',
+          text: `Inverter a relação de causa e consequência ou ignorar as restrições de validade do conceito em ${resolvedTopic}.`,
+          isCorrect: true,
+          explanation: `Exato! Em "${resolvedTopic}", os distratores costumam trocar a causa primária pelo efeito final ou omitir condições essenciais.`
+        },
+        {
+          letter: 'B',
+          text: 'Apresentar enunciados sempre sem texto-base ou contextualização.',
+          isCorrect: false,
+          explanation: 'Incorreto. As questões utilizam textos, gráficos e situações cotidianas como ponto de partida.'
+        },
+        {
+          letter: 'C',
+          text: 'Exigir apenas cálculos ou respostas que extrapolam totalmente o conteúdo programático.',
+          isCorrect: false,
+          explanation: 'Incorreto. As questões avaliam competências previstas na matriz de referência.'
+        },
+        {
+          letter: 'D',
+          text: 'Possuir duas alternativas idênticas como gabarito oficial.',
+          isCorrect: false,
+          explanation: 'Incorreto. Há sempre uma única alternativa que responde integralmente ao comando.'
+        }
+      ]
+    },
+    {
+      id: `dyn_${slug}_3`,
+      subject,
+      topic: resolvedTopic,
+      difficulty: 'difícil',
+      text: `Em uma revisão avançada de "${resolvedTopic}" na disciplina de ${subject}, a consolidação do conhecimento na memória de longo prazo ocorre de forma mais eficaz quando o estudante:`,
+      options: [
+        {
+          letter: 'A',
+          text: `Explica o funcionamento de ${resolvedTopic} com suas próprias palavras (Feynman) e revisa os erros de forma espaçada (FSRS).`,
+          isCorrect: true,
+          explanation: `Perfeito! Combinar recuperação ativa sobre "${resolvedTopic}" com repetição espaçada garante retenção superior a 85%.`
+        },
+        {
+          letter: 'B',
+          text: 'Apenas relê passivamente o mesmo parágrafo diversas vezes seguidas.',
+          isCorrect: false,
+          explanation: 'Incorreto. A releitura passiva gera ilusão de competência e baixa retenção após 48 horas.'
+        },
+        {
+          letter: 'C',
+          text: 'Pula a correção dos erros cometidos nos simulados diagnósticos.',
+          isCorrect: false,
+          explanation: 'Incorreto. Analisar o motivo do erro é a etapa que mais aumenta a pontuação.'
+        },
+        {
+          letter: 'D',
+          text: 'Estuda apenas na véspera da avaliação sem testar o conteúdo em questões.',
+          isCorrect: false,
+          explanation: 'Incorreto. O acúmulo de véspera sobrecarrega a memória de trabalho.'
+        }
+      ]
+    }
+  ];
+
+  // Se a disciplina já tinha questões do próprio tópico no banco, mescla no topo
+  const matchingExisting = existingBank
+    ? existingBank.questions.filter((q) => q.topic.toLowerCase().includes(resolvedTopic.toLowerCase()))
+    : [];
+
+  return {
+    subject,
+    defaultTopic: resolvedTopic,
+    suggestedTopics: existingBank?.suggestedTopics || [
+      resolvedTopic,
+      `Conceitos Fundamentais de ${subject}`,
+      `Aplicações Práticas em ${subject}`,
+      `Revisão Geral de ${subject}`
+    ],
+    generalSummary: {
+      definition:
+        customSummaryText ||
+        existingBank?.generalSummary.definition ||
+        `Estudo estruturado do conteúdo "${resolvedTopic}" na disciplina de ${subject}, compreendendo suas definições centrais, causas, relações e aplicações em provas.`,
+      formulaOrRule:
+        existingBank?.generalSummary.formulaOrRule ||
+        `Eixo Central (${subject}): Conceito Base → Condição de Aplicação → Resolução de Problemas em ${resolvedTopic}`,
+      enemTip:
+        existingBank?.generalSummary.enemTip ||
+        `Ao resolver questões de "${resolvedTopic}", grife sempre o comando da questão e identifique qual fenômeno ou regra de ${subject} conecta o texto-base à alternativa correta.`
+    },
+    descriptivePrompt: `Com base nos seus estudos de ${subject}, explique detalhadamente os conceitos fundamentais de "${resolvedTopic}", suas principais características e um exemplo prático de aplicação.`,
+    questions: matchingExisting.length > 0 ? [...matchingExisting, ...dynamicQuestions] : dynamicQuestions,
+  };
+}
+
+export function getQuestionsBySubject(subject: string, count?: number, topicTitle?: string): BankQuestion[] {
+  const data = getDynamicStudyDataForTopic(subject, topicTitle);
+  const list = data.questions.map((q) => ({ ...q, selectedLetter: undefined }));
   if (count && count > 0) {
     return list.slice(0, count);
   }
   return list;
 }
 
-export function getSubjectStudyData(subject: string): SubjectStudyData {
-  return SUBJECT_STUDY_BANK[subject] || SUBJECT_STUDY_BANK['Física'];
+export function getSubjectStudyData(subject: string, topicTitle?: string): SubjectStudyData {
+  return getDynamicStudyDataForTopic(subject, topicTitle);
 }

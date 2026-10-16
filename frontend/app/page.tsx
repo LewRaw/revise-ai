@@ -16,13 +16,21 @@ import {
   HelpCircle,
   GraduationCap,
   Brain,
-  Send
+  Send,
+  Users,
+  Layers,
+  UserPlus,
+  Plus
 } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
+import { useAuth } from '@/context/AuthContext';
 import { BottomNav, ActiveTab } from '@/components/BottomNav';
 import { RoutineManager } from '@/components/routines/RoutineManager';
 import { GradebookView } from '@/components/gradebook/GradebookView';
-import { getQuestionsBySubject, BankQuestion } from '@/lib/questionBank';
+import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
+import { SubjectContentModal } from '@/components/subjects/SubjectContentModal';
+import { AccountAndPlanModal } from '@/components/saas/AccountAndPlanModal';
+import { getDynamicStudyDataForTopic, BankQuestion } from '@/lib/questionBank';
 import { 
   createErrorCard, 
   scheduleNextFsrsReview, 
@@ -39,22 +47,35 @@ import {
 
 export default function HomePage() {
   const { showToast } = useToast();
-  const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
+  const {
+    currentUser,
+    userSubjects,
+    activeSubject,
+    activeTopic,
+    setActiveSubject,
+    setActiveTopic,
+    startNewStudentOnboarding,
+  } = useAuth();
 
-  // Dashboard Stats Persistentes
+  const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
+  const [isSubjectModalOpen, setIsSubjectModalOpen] = useState<boolean>(false);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState<boolean>(false);
+
+  // Dashboard Stats Persistentes Isolados por Usuário
   const [masteryScore, setMasteryScore] = useState<number>(780);
   const [streakDays, setStreakDays] = useState<number>(5);
   const [completedReviews, setCompletedReviews] = useState<number>(8);
 
-  // Caderno de Erros FSRS
+  // Caderno de Erros FSRS Isolado por Usuário
   const [errorCards, setErrorCards] = useState<ErrorNotebookCard[]>([]);
   const [revealedErrorIds, setRevealedErrorIds] = useState<Record<string, boolean>>({});
 
-  // Disciplina Global Selecionada
-  const [selectedSubject, setSelectedSubject] = useState<string>('Física');
+  // Disciplina Global Selecionada sincronizada com AuthContext
+  const selectedSubject = activeSubject;
+  const setSelectedSubject = setActiveSubject;
 
   // Módulo de Voz (Feynman)
-  const [voiceTopic, setVoiceTopic] = useState<string>('Leis da Termodinâmica');
+  const [voiceTopic, setVoiceTopic] = useState<string>('Cinemática: MU e MUV');
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [recordingSeconds, setRecordingSeconds] = useState<number>(0);
   const [voiceTranscription, setVoiceTranscription] = useState<string>('');
@@ -77,31 +98,56 @@ export default function HomePage() {
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Módulo de Simulado
+  // Módulo de Simulado Dinâmico (Suporta qualquer disciplina e conteúdo customizado)
   const [quizQuestions, setQuizQuestions] = useState<BankQuestion[]>(() =>
-    getQuestionsBySubject('Física')
+    getDynamicStudyDataForTopic('Física', 'Cinemática: MU e MUV').questions.map((q) => ({
+      ...q,
+      selectedLetter: undefined,
+    }))
   );
   const [quizSubmitted, setQuizSubmitted] = useState<boolean>(false);
 
-  // Carregar estado persistido no cliente
+  // Recarregar estado isolado sempre que o usuário ativo mudar
   useEffect(() => {
-    const stats = loadUserStats();
+    const stats = loadUserStats(currentUser.id);
     setMasteryScore(stats.masteryScore);
     setStreakDays(stats.streakDays);
     setCompletedReviews(stats.completedReviews);
-    setErrorCards(loadErrorNotebook());
-  }, []);
+    setErrorCards(loadErrorNotebook(currentUser.id));
+  }, [currentUser.id]);
+
+  // Atualizar questões e tópico de voz quando a disciplina ou conteúdo ativo mudar
+  useEffect(() => {
+    setVoiceTopic(activeTopic);
+    const activeSubObj = userSubjects.find((s) => s.name === activeSubject);
+    const activeTopObj = activeSubObj?.topics.find((t) => t.title === activeTopic);
+    const dynamicData = getDynamicStudyDataForTopic(
+      activeSubject,
+      activeTopic,
+      activeTopObj?.summaryText
+    );
+    setQuizQuestions(
+      dynamicData.questions.map((q) => ({
+        ...q,
+        selectedLetter: undefined,
+      }))
+    );
+    setQuizSubmitted(false);
+  }, [activeSubject, activeTopic, userSubjects]);
 
   const updateScoreAndPersist = (deltaScore: number, incrementReviews: boolean = true) => {
     setMasteryScore((prev) => {
       const nextScore = Math.min(1000, prev + deltaScore);
       const nextReviews = incrementReviews ? completedReviews + 1 : completedReviews;
       if (incrementReviews) setCompletedReviews(nextReviews);
-      saveUserStats({
-        masteryScore: nextScore,
-        streakDays,
-        completedReviews: nextReviews,
-      });
+      saveUserStats(
+        {
+          masteryScore: nextScore,
+          streakDays,
+          completedReviews: nextReviews,
+        },
+        currentUser.id
+      );
       return nextScore;
     });
   };
@@ -109,8 +155,6 @@ export default function HomePage() {
   // Trocar disciplina do simulado
   const handleSelectSubject = (subj: string) => {
     setSelectedSubject(subj);
-    setQuizQuestions(getQuestionsBySubject(subj));
-    setQuizSubmitted(false);
   };
 
   // Timer da Gravação de Voz
@@ -332,7 +376,7 @@ export default function HomePage() {
 
     if (newErrorsAdded > 0) {
       setErrorCards(currentNotebook);
-      saveErrorNotebook(currentNotebook);
+      saveErrorNotebook(currentNotebook, currentUser.id);
     }
 
     const gainedScore = correctCount * 15;
@@ -347,7 +391,19 @@ export default function HomePage() {
 
   const handleResetQuiz = () => {
     setQuizSubmitted(false);
-    setQuizQuestions(getQuestionsBySubject(selectedSubject));
+    const activeSubObj = userSubjects.find((s) => s.name === selectedSubject);
+    const activeTopObj = activeSubObj?.topics.find((t) => t.title === activeTopic);
+    const dynamicData = getDynamicStudyDataForTopic(
+      selectedSubject,
+      activeTopic,
+      activeTopObj?.summaryText
+    );
+    setQuizQuestions(
+      dynamicData.questions.map((q) => ({
+        ...q,
+        selectedLetter: undefined,
+      }))
+    );
     showToast('Simulado reiniciado para novo treino.', 'info');
   };
 
@@ -357,7 +413,7 @@ export default function HomePage() {
       c.id === cardId ? scheduleNextFsrsReview(c, rating) : c
     );
     setErrorCards(updated);
-    saveErrorNotebook(updated);
+    saveErrorNotebook(updated, currentUser.id);
     if (rating === 'good' || rating === 'easy') {
       updateScoreAndPersist(5, false);
       showToast('Conceito fortalecido na memória de longo prazo (FSRS)! +5 pts', 'success');
@@ -367,31 +423,77 @@ export default function HomePage() {
   };
 
   const activeErrorCards = getActiveErrorCards(errorCards);
+  const currentSubjectObj =
+    userSubjects.find((s) => s.name === selectedSubject) || userSubjects[0];
 
   return (
     <main className="w-full">
-      {/* Top Header Fintech */}
-      <header className="flex items-center justify-between pb-4 border-b border-[#262626] mb-5">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-bold tracking-tight text-white">Revise<span className="text-[#11C76F]">AI</span></span>
-            <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-[#141414] border border-[#262626] text-[#8E8E93]">
-              Ensino Médio
-            </span>
+      {/* Top Header Fintech SaaS */}
+      <header className="flex flex-col gap-3 pb-4 border-b border-[#262626] mb-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xl font-bold tracking-tight text-white">
+                Revise<span className="text-[#11C76F]">AI</span>
+              </span>
+              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-[#11C76F]/15 border border-[#11C76F]/30 text-[#11C76F]">
+                SaaS {currentUser.plan}
+              </span>
+            </div>
+            <p className="text-xs text-[#8E8E93] mt-0.5">
+              {currentUser.fullName} • {currentUser.schoolGrade}
+            </p>
           </div>
-          <p className="text-xs text-[#8E8E93] mt-0.5">Feynman, FSRS, rotinas guiadas & boletim</p>
+
+          {/* Badges de Domínio, Ofensiva & Troca de Conta */}
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#141414] border border-[#262626]">
+              <Flame className="w-4 h-4 text-[#F59E0B]" />
+              <span className="text-xs font-semibold text-white">{streakDays}d</span>
+            </div>
+            <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#11C76F]/10 border border-[#11C76F]/30">
+              <Award className="w-4 h-4 text-[#11C76F]" />
+              <span className="text-xs font-bold text-[#11C76F]">{masteryScore}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsAccountModalOpen(true)}
+              aria-label="Gerenciar contas SaaS e planos"
+              className="min-w-[44px] min-h-[44px] px-2.5 rounded-xl bg-[#141414] border border-[#262626] hover:border-[#11C76F] flex items-center justify-center gap-1.5 text-xs font-bold text-white transition-all"
+            >
+              <Users className="w-4 h-4 text-[#11C76F]" />
+            </button>
+          </div>
         </div>
 
-        {/* Badges de Domínio & Ofensiva */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#141414] border border-[#262626]">
-            <Flame className="w-4 h-4 text-[#F59E0B]" />
-            <span className="text-xs font-semibold text-white">{streakDays}d</span>
-          </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#11C76F]/10 border border-[#11C76F]/30">
-            <Award className="w-4 h-4 text-[#11C76F]" />
-            <span className="text-xs font-bold text-[#11C76F]">{masteryScore}</span>
-          </div>
+        {/* Barra SaaS de Foco de Estudo (Disciplina + Conteúdo + Onboarding Rápido) */}
+        <div className="flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-[#141414] border border-[#262626]">
+          <button
+            type="button"
+            onClick={() => setIsSubjectModalOpen(true)}
+            className="flex-1 min-h-[44px] px-3 py-1.5 rounded-xl bg-[#1C1C1C] border border-[#262626] hover:border-[#11C76F]/50 text-left flex items-center justify-between gap-2 transition-all"
+          >
+            <div className="min-w-0">
+              <div className="text-[10px] uppercase tracking-wider text-[#8E8E93] font-semibold flex items-center gap-1">
+                <Layers className="w-3 h-3 text-[#11C76F]" /> Disciplina & Conteúdo Ativo
+              </div>
+              <div className="text-xs font-bold text-white truncate">
+                {selectedSubject} • <span className="text-[#11C76F]">{activeTopic}</span>
+              </div>
+            </div>
+            <span className="text-[11px] font-bold text-[#11C76F] shrink-0 flex items-center gap-0.5">
+              <Plus className="w-3.5 h-3.5" /> Conteúdos
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={startNewStudentOnboarding}
+            className="min-h-[44px] px-3 rounded-xl bg-[#11C76F]/15 border border-[#11C76F]/40 hover:bg-[#11C76F]/25 text-[#11C76F] text-xs font-bold flex items-center gap-1.5 shrink-0 transition-all"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span className="hidden xs:inline">Onboarding</span>
+          </button>
         </div>
       </header>
 
@@ -403,7 +505,9 @@ export default function HomePage() {
           {/* Card Destaque: Score de Domínio */}
           <div className="p-5 rounded-2xl bg-[#141414] border border-[#262626] relative overflow-hidden">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold uppercase text-[#8E8E93] tracking-wider">Seu Nível ENEM / Vestibular</span>
+              <span className="text-xs font-semibold uppercase text-[#8E8E93] tracking-wider">
+                Meta: {currentUser.targetExam}
+              </span>
               <span className="text-xs font-bold text-[#11C76F]">
                 {masteryScore >= 750 ? 'Nível Avançado' : 'Em Evolução'}
               </span>
@@ -419,7 +523,8 @@ export default function HomePage() {
               />
             </div>
             <p className="text-xs text-[#8E8E93] mt-3">
-              💡 Você concluiu <strong className="text-white">{completedReviews} revisões ativas</strong>. Seus dados estão sincronizados no dispositivo.
+              💡 Você concluiu <strong className="text-white">{completedReviews} revisões ativas</strong> em{' '}
+              <strong className="text-white">{userSubjects.length} disciplinas</strong> cadastradas.
             </p>
           </div>
 
@@ -496,23 +601,41 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Disciplinas Interativas */}
+          {/* Disciplinas Interativas do Usuário (Suporta Customizadas) */}
           <div>
-            <h2 className="text-sm font-semibold text-white mb-3">Praticar por Disciplina</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-              {['Física', 'Matemática', 'Química', 'Biologia', 'História'].map((subj) => (
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-white">
+                Suas Disciplinas & Conteúdos ({userSubjects.length})
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsSubjectModalOpen(true)}
+                className="text-xs font-bold text-[#11C76F] hover:underline flex items-center gap-1"
+              >
+                <Plus className="w-3.5 h-3.5" /> Nova Matéria / Assunto
+              </button>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              {userSubjects.map((subj) => (
                 <button
-                  key={subj}
+                  key={subj.id}
                   onClick={() => {
-                    handleSelectSubject(subj);
+                    handleSelectSubject(subj.name);
                     setActiveTab('quiz');
                   }}
-                  className="p-3.5 rounded-2xl bg-[#141414] border border-[#262626] hover:border-[#11C76F] text-left transition-all active:scale-98 min-h-[64px] flex flex-col justify-between"
+                  className="p-3.5 rounded-2xl bg-[#141414] border border-[#262626] hover:border-[#11C76F] text-left transition-all active:scale-98 min-h-[72px] flex flex-col justify-between"
                 >
-                  <BookOpen className="w-4 h-4 text-[#11C76F] mb-2" />
+                  <div className="flex items-center justify-between w-full mb-1.5">
+                    <span className="text-base">{subj.icon}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#1C1C1C] text-[#8E8E93] border border-[#262626]">
+                      {subj.topics.length} conteúdos
+                    </span>
+                  </div>
                   <div>
-                    <div className="text-xs font-bold text-white">{subj}</div>
-                    <div className="text-[10px] text-[#8E8E93]">Abrir Simulado →</div>
+                    <div className="text-xs font-bold text-white truncate">{subj.name}</div>
+                    <div className="text-[10px] text-[#11C76F] truncate">
+                      {subj.topics[0]?.title || 'Praticar Simulado →'}
+                    </div>
                   </div>
                 </button>
               ))}
@@ -533,21 +656,45 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* Seletor de Matéria */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-            {['Física', 'Matemática', 'Química', 'Biologia', 'História'].map((subj) => (
-              <button
-                key={subj}
-                onClick={() => setSelectedSubject(subj)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all min-h-[40px] ${
-                  selectedSubject === subj
-                    ? 'bg-[#11C76F] text-black'
-                    : 'bg-[#141414] text-[#8E8E93] border border-[#262626] hover:text-white'
-                }`}
-              >
-                {subj}
-              </button>
-            ))}
+          {/* Seletor Dinâmico de Matéria e Conteúdo */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+              {userSubjects.map((subj) => (
+                <button
+                  key={subj.id}
+                  onClick={() => setSelectedSubject(subj.name)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all min-h-[40px] flex items-center gap-1.5 ${
+                    selectedSubject === subj.name
+                      ? 'bg-[#11C76F] text-black'
+                      : 'bg-[#141414] text-[#8E8E93] border border-[#262626] hover:text-white'
+                  }`}
+                >
+                  <span>{subj.icon}</span>
+                  <span>{subj.name}</span>
+                </button>
+              ))}
+            </div>
+
+            {currentSubjectObj && currentSubjectObj.topics.length > 0 && (
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                {currentSubjectObj.topics.map((top) => (
+                  <button
+                    key={top.id}
+                    onClick={() => {
+                      setActiveTopic(top.title);
+                      setVoiceTopic(top.title);
+                    }}
+                    className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap border transition-all min-h-[34px] ${
+                      activeTopic === top.title
+                        ? 'bg-[#11C76F]/15 border-[#11C76F] text-[#11C76F]'
+                        : 'bg-[#141414] border-[#262626] text-[#8E8E93] hover:text-white'
+                    }`}
+                  >
+                    {top.title}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Seção 1: Gravação Feynman */}
@@ -690,21 +837,42 @@ export default function HomePage() {
       {/* ============================================================== */}
       {activeTab === 'quiz' && (
         <section className="space-y-5 animate-in fade-in duration-200">
-          {/* Seletor de Disciplina do Simulado */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-            {['Física', 'Matemática', 'Química', 'Biologia', 'História'].map((subj) => (
-              <button
-                key={subj}
-                onClick={() => handleSelectSubject(subj)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all min-h-[44px] ${
-                  selectedSubject === subj
-                    ? 'bg-[#11C76F] text-black shadow-md shadow-[#11C76F]/20'
-                    : 'bg-[#141414] text-[#8E8E93] border border-[#262626] hover:text-white'
-                }`}
-              >
-                {subj}
-              </button>
-            ))}
+          {/* Seletor Dinâmico de Disciplina e Conteúdo do Simulado */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+              {userSubjects.map((subj) => (
+                <button
+                  key={subj.id}
+                  onClick={() => handleSelectSubject(subj.name)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all min-h-[44px] flex items-center gap-1.5 ${
+                    selectedSubject === subj.name
+                      ? 'bg-[#11C76F] text-black shadow-md shadow-[#11C76F]/20'
+                      : 'bg-[#141414] text-[#8E8E93] border border-[#262626] hover:text-white'
+                  }`}
+                >
+                  <span>{subj.icon}</span>
+                  <span>{subj.name}</span>
+                </button>
+              ))}
+            </div>
+
+            {currentSubjectObj && currentSubjectObj.topics.length > 0 && (
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                {currentSubjectObj.topics.map((top) => (
+                  <button
+                    key={top.id}
+                    onClick={() => setActiveTopic(top.title)}
+                    className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap border transition-all min-h-[34px] ${
+                      activeTopic === top.title
+                        ? 'bg-[#11C76F]/15 border-[#11C76F] text-[#11C76F]'
+                        : 'bg-[#141414] border-[#262626] text-[#8E8E93] hover:text-white'
+                    }`}
+                  >
+                    {top.title}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Seção do Caderno de Erros FSRS (Se houver erros para revisar) */}
@@ -778,7 +946,9 @@ export default function HomePage() {
           {/* Header do Simulado */}
           <div className="flex items-center justify-between p-4 rounded-2xl bg-[#141414] border border-[#262626]">
             <div>
-              <h2 className="text-base font-bold text-white">📝 Simulado: {selectedSubject}</h2>
+              <h2 className="text-base font-bold text-white">
+                📝 Simulado: {selectedSubject} • {activeTopic}
+              </h2>
               <p className="text-xs text-[#8E8E93]">
                 {quizQuestions.length} questões estilo ENEM • Erros vão automaticamente para o FSRS
               </p>
@@ -873,6 +1043,17 @@ export default function HomePage() {
       {activeTab === 'gradebook' && (
         <GradebookView />
       )}
+
+      {/* Modais SaaS Multi-Usuários, Onboarding em 4 Etapas e Disciplinas/Conteúdos */}
+      <OnboardingWizard />
+      <SubjectContentModal
+        isOpen={isSubjectModalOpen}
+        onClose={() => setIsSubjectModalOpen(false)}
+      />
+      <AccountAndPlanModal
+        isOpen={isAccountModalOpen}
+        onClose={() => setIsAccountModalOpen(false)}
+      />
 
       {/* Barra de Navegação Inferior Nativa Fintech (5 Abas) */}
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />

@@ -17,8 +17,9 @@ import {
 import { Portal } from '@/components/Portal';
 import { useBodyScrollLock } from '@/lib/useBodyScrollLock';
 import { useToast } from '@/context/ToastContext';
+import { useAuth } from '@/context/AuthContext';
 import { DescriptiveFeedback } from '@/lib/ai_service';
-import { getSubjectStudyData, BankQuestion } from '@/lib/questionBank';
+import { getDynamicStudyDataForTopic, BankQuestion } from '@/lib/questionBank';
 import { createErrorCard } from '@/lib/fsrsEngine';
 import { loadErrorNotebook, saveErrorNotebook } from '@/lib/storageService';
 
@@ -48,8 +49,17 @@ export const RoutinePlayerModal: React.FC<RoutinePlayerModalProps> = ({
 }) => {
   useBodyScrollLock(isOpen);
   const { showToast } = useToast();
+  const { userSubjects, activeTopic } = useAuth();
 
-  const studyData = getSubjectStudyData(subjectName);
+  const matchedSubject = userSubjects.find((s) => s.name === subjectName);
+  const matchedTopic =
+    matchedSubject?.topics.find((t) => t.title === activeTopic) || matchedSubject?.topics[0];
+
+  const studyData = getDynamicStudyDataForTopic(
+    subjectName,
+    matchedTopic?.title,
+    matchedTopic?.summaryText
+  );
 
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);

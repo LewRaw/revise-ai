@@ -323,3 +323,56 @@ ON public.student_grades FOR ALL
 USING (auth.uid() = user_id)
 WITH CHECK (auth.uid() = user_id);
 
+-- =====================================================================
+-- 14. Evolução SaaS Multi-Usuário, Onboarding & Conteúdos Customizados
+-- =====================================================================
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS plan TEXT NOT NULL DEFAULT 'free' CHECK (plan IN ('free', 'plus', 'pro'));
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS ai_credits INTEGER NOT NULL DEFAULT 25;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN NOT NULL DEFAULT false;
+
+-- Tabela de Disciplinas Personalizadas por Usuário (user_subjects)
+CREATE TABLE IF NOT EXISTS public.user_subjects (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    name TEXT NOT NULL,
+    area TEXT NOT NULL DEFAULT 'Personalizada',
+    color_accent TEXT NOT NULL DEFAULT '#11C76F',
+    is_custom BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    UNIQUE(user_id, name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_subjects_user ON public.user_subjects(user_id);
+ALTER TABLE public.user_subjects ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Alunos gerenciam apenas suas disciplinas" ON public.user_subjects;
+CREATE POLICY "Alunos gerenciam apenas suas disciplinas"
+ON public.user_subjects FOR ALL
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+
+-- Tabela de Conteúdos / Tópicos por Disciplina do Usuário (subject_contents)
+CREATE TABLE IF NOT EXISTS public.subject_contents (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    subject_name TEXT NOT NULL,
+    title TEXT NOT NULL,
+    summary_definition TEXT,
+    formula_or_rule TEXT,
+    enem_tip TEXT,
+    descriptive_prompt TEXT,
+    custom_questions JSONB DEFAULT '[]'::jsonb,
+    mastery_level INTEGER NOT NULL DEFAULT 0, -- 0 a 100%
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_subject_contents_user_subj ON public.subject_contents(user_id, subject_name);
+ALTER TABLE public.subject_contents ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Alunos gerenciam apenas seus conteudos" ON public.subject_contents;
+CREATE POLICY "Alunos gerenciam apenas seus conteudos"
+ON public.subject_contents FOR ALL
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+
+
