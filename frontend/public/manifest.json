@@ -1,0 +1,10 @@
+{
+  "name": "ReviseAI - Estudos e Simulados ENEM",
+  "short_name": "ReviseAI",
+  "description": "Revisão ativa por voz, fotos de cadernos e simulados para o Ensino Médio",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait"
+}
