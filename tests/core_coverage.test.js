@@ -60,4 +60,16 @@ assert.ok(!authCtxSource.includes('DEFAULT_DEMO_USER'), 'Proibido usar DEFAULT_D
 assert.ok(authCtxSource.includes('onAuthStateChange'), 'Deve monitorar onAuthStateChange do Supabase');
 console.log('  ✅ PASS: 5. Autenticação real Supabase Auth (Zero DEFAULT_DEMO_USER)');
 
+// 6. Teste das Regras 2 e 3 (AGENTS.md): Anti-Monólito (page.tsx < 200 linhas) e ProfileHeader Fintech
+const pageFile = path.resolve(__dirname, '../frontend/app/page.tsx');
+const profileHeaderFile = path.resolve(__dirname, '../frontend/components/ProfileHeader.tsx');
+const activeStudyFile = path.resolve(__dirname, '../frontend/components/study/ActiveStudyTab.tsx');
+const errorNotebookFile = path.resolve(__dirname, '../frontend/components/study/ErrorNotebookTab.tsx');
+assert.ok(fs.existsSync(profileHeaderFile), 'ProfileHeader.tsx deve existir');
+assert.ok(fs.existsSync(activeStudyFile), 'ActiveStudyTab.tsx deve existir');
+assert.ok(fs.existsSync(errorNotebookFile), 'ErrorNotebookTab.tsx deve existir');
+const pageLines = fs.readFileSync(pageFile, 'utf8').split(/\r?\n/).length;
+assert.ok(pageLines <= 200, `page.tsx deve ter menos de 200 linhas (atual: ${pageLines})`);
+console.log(`  ✅ PASS: 6. Arquitetura Anti-Monólito validada (page.tsx com ${pageLines} linhas)`);
+
 console.log('\n🎉 TODOS OS TESTES PASSARAM COM 100% DE SUCESSO!\n');
