@@ -1,14 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import {
-  Mic,
-  MicOff,
-  Camera,
-  Sparkles,
-  ArrowRight,
-  Send,
-} from 'lucide-react';
+import { Mic, MicOff, Camera, Sparkles, ArrowRight, Send } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 import { useAuth } from '@/context/AuthContext';
 
@@ -17,18 +10,9 @@ interface ActiveStudyTabProps {
   onNavigateToQuiz: () => void;
 }
 
-export const ActiveStudyTab: React.FC<ActiveStudyTabProps> = ({
-  onScoreGain,
-  onNavigateToQuiz,
-}) => {
+export const ActiveStudyTab: React.FC<ActiveStudyTabProps> = ({ onScoreGain, onNavigateToQuiz }) => {
   const { showToast } = useToast();
-  const {
-    userSubjects,
-    activeSubject,
-    activeTopic,
-    setActiveSubject,
-    setActiveTopic,
-  } = useAuth();
+  const { userSubjects, activeSubject, activeTopic, setActiveSubject, setActiveTopic } = useAuth();
 
   const [voiceTopic, setVoiceTopic] = useState<string>(activeTopic);
   const [isRecording, setIsRecording] = useState<boolean>(false);

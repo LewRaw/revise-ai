@@ -5,12 +5,23 @@ import {
   evaluateDescriptiveAnswer,
   generateFocalSummaryFromErrors,
   generateQuizFromContent,
+  generateCustomTopicStudyMaterial,
 } from '@/lib/ai_service';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { action, topic, subject, transcription, base64Image, question, studentAnswer, errorDescriptions, contentSnippet } = body;
+    const {
+      action,
+      topic,
+      subject,
+      transcription,
+      base64Image,
+      question,
+      studentAnswer,
+      errorDescriptions,
+      contentSnippet,
+    } = body;
 
     switch (action) {
       case 'evaluate_voice': {
@@ -31,6 +42,18 @@ export async function POST(req: NextRequest) {
       }
       case 'generate_quiz': {
         const result = await generateQuizFromContent(topic || 'Geral', contentSnippet || '');
+        return NextResponse.json({ ok: true, data: result });
+      }
+      case 'generate_topic_material':
+      case 'generate_study_material': {
+        const result = await generateCustomTopicStudyMaterial({
+          subject: subject || 'Disciplina Geral',
+          topicTitle: body.topicTitle || topic || 'Fundamentos Gerais',
+          userNotes: body.userNotes || body.studentContext || contentSnippet || '',
+          difficulty: body.difficulty || 'medium',
+          schoolGrade: body.schoolGrade || '3º Ano EM',
+          targetExam: body.targetExam || 'ENEM & Vestibulares',
+        });
         return NextResponse.json({ ok: true, data: result });
       }
       default:
