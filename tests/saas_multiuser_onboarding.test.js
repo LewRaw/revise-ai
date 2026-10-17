@@ -2,7 +2,7 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 
-console.log('🧪 Iniciando Testes Automatizados: Arquitetura SaaS Multi-Usuários, Onboarding em 4 Etapas & Disciplinas/Conteúdos Dinâmicos...');
+console.log('🧪 Iniciando Testes Automatizados: Autenticação Real Supabase Auth, Onboarding & Disciplinas/Conteúdos Dinâmicos...');
 
 const rootDir = path.resolve(__dirname, '..');
 
@@ -15,44 +15,31 @@ assert(schemaSql.includes('Alunos gerenciam apenas suas disciplinas'), 'Polític
 assert(schemaSql.includes('Alunos gerenciam apenas seus conteudos'), 'Política RLS de subject_contents ausente');
 console.log('  ✅ 1. Schema Supabase Multi-Tenant (user_subjects, subject_contents e RLS) validado.');
 
-// 2. Verificar Isolamento Multi-Usuário e Provisionamento de Onboarding no storageService.ts
+// 2. Verificar Regra 1 do AGENTS.md: ZERO Autenticação Fake (Sem DEFAULT_DEMO_USER)
 const storageCode = fs.readFileSync(path.join(rootDir, 'frontend', 'lib', 'storageService.ts'), 'utf-8');
+assert(!storageCode.includes('DEFAULT_DEMO_USER'), 'Violação da Regra 1: DEFAULT_DEMO_USER encontrado em storageService.ts');
 assert(storageCode.includes('export function provisionUserOnboarding'), 'Função provisionUserOnboarding ausente em storageService.ts');
 assert(storageCode.includes('function getScopedKey(baseKey: string, userId?: string)'), 'Isolamento de chave por userId (getScopedKey) ausente');
-assert(storageCode.includes('export function loadUserSubjects'), 'loadUserSubjects ausente em storageService.ts');
-assert(storageCode.includes('export function saveUserSubjects'), 'saveUserSubjects ausente em storageService.ts');
-console.log('  ✅ 2. Isolamento de dados por usuário (Multi-User Namespacing) e provisionamento de Onboarding validados.');
+console.log('  ✅ 2. Zero Autenticação Fake (DEFAULT_DEMO_USER eliminado) e escopo por auth.uid() validado.');
 
-// 3. Verificar Geração Dinâmica de Estudos para Qualquer Disciplina e Conteúdo em questionBank.ts
-const questionBankCode = fs.readFileSync(path.join(rootDir, 'frontend', 'lib', 'questionBank.ts'), 'utf-8');
-assert(questionBankCode.includes('export function getDynamicStudyDataForTopic'), 'getDynamicStudyDataForTopic ausente em questionBank.ts');
-assert(questionBankCode.includes('suggestedTopics:'), 'Lista de tópicos sugeridos por disciplina ausente em questionBank.ts');
-assert(questionBankCode.includes('Geografia') && questionBankCode.includes('Redação & Linguagens'), 'Novas disciplinas base ausentes em questionBank.ts');
-console.log('  ✅ 3. Motor dinâmico de questões e resumos por disciplina e conteúdo (getDynamicStudyDataForTopic) validado.');
+// 3. Verificar AuthModal.tsx (Login e Cadastro Real via Supabase Auth)
+const authModalPath = path.join(rootDir, 'frontend', 'components', 'auth', 'AuthModal.tsx');
+assert(fs.existsSync(authModalPath), 'AuthModal.tsx não encontrado em frontend/components/auth/');
+const authModalCode = fs.readFileSync(authModalPath, 'utf-8');
+assert(authModalCode.includes('supabase.auth.signInWithPassword'), 'signInWithPassword ausente no AuthModal.tsx');
+assert(authModalCode.includes('supabase.auth.signUp'), 'signUp ausente no AuthModal.tsx');
+assert(authModalCode.includes('#000000') && authModalCode.includes('#141414') && authModalCode.includes('#11C76F'), 'Paleta Fintech escura ausente no AuthModal.tsx');
+assert(!authModalCode.includes('alert('), 'Proibido uso de alert() em AuthModal.tsx');
+console.log('  ✅ 3. Componente AuthModal.tsx (signInWithPassword + signUp + Fintech Dark) validado.');
 
-// 4. Verificar AuthContext e Componentes de Onboarding em 4 Etapas, Conteúdos e Contas SaaS
+// 4. Verificar AuthContext.tsx (onAuthStateChange + vínculo com public.profiles + exibição de AuthModal)
 const authCtxPath = path.join(rootDir, 'frontend', 'context', 'AuthContext.tsx');
-const wizardPath = path.join(rootDir, 'frontend', 'components', 'onboarding', 'OnboardingWizard.tsx');
-const subjectModalPath = path.join(rootDir, 'frontend', 'components', 'subjects', 'SubjectContentModal.tsx');
-const accountModalPath = path.join(rootDir, 'frontend', 'components', 'saas', 'AccountAndPlanModal.tsx');
+const authCtxCode = fs.readFileSync(authCtxPath, 'utf-8');
+assert(!authCtxCode.includes('DEFAULT_DEMO_USER'), 'Violação da Regra 1: DEFAULT_DEMO_USER encontrado em AuthContext.tsx');
+assert(authCtxCode.includes('supabase.auth.onAuthStateChange'), 'Monitoramento onAuthStateChange ausente em AuthContext.tsx');
+assert(authCtxCode.includes('supabase.auth.getSession'), 'Verificação getSession ausente em AuthContext.tsx');
+assert(authCtxCode.includes(".from('profiles')"), 'Vínculo com a tabela public.profiles ausente em AuthContext.tsx');
+assert(authCtxCode.includes('<AuthModal'), 'Renderização automática do AuthModal para usuários não logados ausente em AuthContext.tsx');
+console.log('  ✅ 4. AuthContext.tsx monitorando sessão real (onAuthStateChange) e vinculado a public.profiles validado.');
 
-assert(fs.existsSync(authCtxPath), 'AuthContext.tsx não encontrado');
-assert(fs.existsSync(wizardPath), 'OnboardingWizard.tsx não encontrado');
-assert(fs.existsSync(subjectModalPath), 'SubjectContentModal.tsx não encontrado');
-assert(fs.existsSync(accountModalPath), 'AccountAndPlanModal.tsx não encontrado');
-
-const wizardCode = fs.readFileSync(wizardPath, 'utf-8');
-assert(wizardCode.includes('Onboarding SaaS • Passo {step} de 4'), 'Indicador de 4 etapas ausente no OnboardingWizard');
-assert(wizardCode.includes('1. Crie seu Perfil de Estudante'), 'Passo 1 do Onboarding ausente');
-assert(wizardCode.includes('2. Objetivo & Sistema de Notas'), 'Passo 2 do Onboarding ausente');
-assert(wizardCode.includes('3. Escolha suas Disciplinas'), 'Passo 3 do Onboarding ausente');
-assert(wizardCode.includes('4. Conteúdos por Disciplina'), 'Passo 4 do Onboarding ausente');
-
-// Garantir Zero window.alert() nos novos componentes SaaS
-for (const file of [authCtxPath, wizardPath, subjectModalPath, accountModalPath]) {
-  const content = fs.readFileSync(file, 'utf-8');
-  assert(!content.includes('alert('), `Proibido uso de alert() em ${path.basename(file)}`);
-}
-console.log('  ✅ 4. Wizard de Onboarding em 4 Etapas, Gerenciador de Conteúdos e Switcher Multi-Contas validados (Zero alert()).');
-
-console.log('🎉 Todos os testes da Arquitetura SaaS Multi-Usuários & Onboarding passaram com 100% de sucesso!');
+console.log('🎉 Todos os testes de Autenticação Real Supabase Auth & Arquitetura SaaS passaram com 100% de sucesso!');

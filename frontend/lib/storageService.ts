@@ -1,7 +1,6 @@
 /**
- * Camada de Persistência Multi-Tenant / Multi-User SaaS (LocalStorage + Sincronização Supabase)
- * Isola dados por usuário (namespace por userId), gerencia perfis SaaS, planos (Free/Plus/Pro),
- * Onboarding em etapas e disciplinas/conteúdos customizados.
+ * Camada de Persistência Multi-Tenant Sincronizada com o ID Real do Supabase Auth (auth.uid())
+ * Isola dados locais por userId autenticado e gerencia disciplinas/conteúdos, boletim e FSRS.
  */
 
 import { TermSystem, SubjectPeriodGrade, calculateCurrentAverage, calculateRequiredGradeToPass, getPeriodsCount } from './gradeCalculations';
@@ -65,8 +64,7 @@ export interface StoredAgendaEvent {
 }
 
 const GLOBAL_KEYS = {
-  USERS_LIST: 'reviseai_saas_users_v1',
-  ACTIVE_USER_ID: 'reviseai_active_user_id_v1',
+  ACTIVE_USER_ID: 'reviseai_active_supabase_uid_v1',
 };
 
 const BASE_KEYS = {
@@ -77,17 +75,17 @@ const BASE_KEYS = {
   SUBJECTS: 'reviseai_user_subjects_v1',
 };
 
-export const DEFAULT_DEMO_USER: SaasUserProfile = {
-  id: 'usr_demo_default',
-  fullName: 'Estudante Demo',
-  email: 'estudante@reviseai.com.br',
+export const UNAUTHENTICATED_PROFILE: SaasUserProfile = {
+  id: '',
+  fullName: 'Estudante',
+  email: '',
   schoolGrade: '3º Ano EM',
   targetExam: 'ENEM & Vestibulares',
   termSystem: 'bimestral',
   passingGrade: 6.0,
-  plan: 'plus',
-  aiCreditsRemaining: 120,
-  onboardingCompleted: true,
+  plan: 'free',
+  aiCreditsRemaining: 25,
+  onboardingCompleted: false,
   createdAt: new Date().toISOString(),
 };
 
@@ -227,60 +225,34 @@ export const DEFAULT_GRADEBOOK: StoredGradebookState = {
   ]
 };
 
-/**
- * Helper para obter o ID do usuário ativo e gerar chaves isoladas por tenant/usuário
- */
 export function getActiveUserId(): string {
-  if (typeof window === 'undefined') return DEFAULT_DEMO_USER.id;
+  if (typeof window === 'undefined') return '';
   try {
-    return localStorage.getItem(GLOBAL_KEYS.ACTIVE_USER_ID) || DEFAULT_DEMO_USER.id;
+    return localStorage.getItem(GLOBAL_KEYS.ACTIVE_USER_ID) || '';
   } catch {
-    return DEFAULT_DEMO_USER.id;
+    return '';
   }
 }
 
 export function setActiveUserId(userId: string): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(GLOBAL_KEYS.ACTIVE_USER_ID, userId);
+    if (!userId) {
+      localStorage.removeItem(GLOBAL_KEYS.ACTIVE_USER_ID);
+    } else {
+      localStorage.setItem(GLOBAL_KEYS.ACTIVE_USER_ID, userId);
+    }
   } catch (e) {
-    console.error('Erro ao definir usuário ativo:', e);
+    console.error('Erro ao sincronizar ID do usuário autenticado:', e);
   }
 }
 
 function getScopedKey(baseKey: string, userId?: string): string {
-  const uid = userId || getActiveUserId();
-  if (uid === DEFAULT_DEMO_USER.id) {
-    return baseKey; // Retrocompatibilidade com a conta padrão
+  const uid = userId !== undefined ? userId : getActiveUserId();
+  if (!uid) {
+    return baseKey;
   }
   return `${baseKey}__${uid}`;
-}
-
-export function loadSaasUsers(): SaasUserProfile[] {
-  if (typeof window === 'undefined') return [DEFAULT_DEMO_USER];
-  try {
-    const raw = localStorage.getItem(GLOBAL_KEYS.USERS_LIST);
-    if (!raw) return [DEFAULT_DEMO_USER];
-    const parsed: SaasUserProfile[] = JSON.parse(raw);
-    return parsed.length > 0 ? parsed : [DEFAULT_DEMO_USER];
-  } catch {
-    return [DEFAULT_DEMO_USER];
-  }
-}
-
-export function saveSaasUsers(users: SaasUserProfile[]): void {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(GLOBAL_KEYS.USERS_LIST, JSON.stringify(users));
-  } catch (e) {
-    console.error('Erro ao salvar lista de usuários SaaS:', e);
-  }
-}
-
-export function loadActiveUserProfile(): SaasUserProfile {
-  const users = loadSaasUsers();
-  const activeId = getActiveUserId();
-  return users.find((u) => u.id === activeId) || users[0] || DEFAULT_DEMO_USER;
 }
 
 export function loadUserSubjects(userId?: string): UserSubjectWithContents[] {
@@ -305,9 +277,10 @@ export function saveUserSubjects(subjects: UserSubjectWithContents[], userId?: s
 }
 
 /**
- * Provisiona um novo usuário recém-cadastrado pelo Onboarding Wizard em Etapas
+ * Provisiona as disciplinas, boletim e agenda para o usuário autenticado ao concluir o Onboarding
  */
 export function provisionUserOnboarding(params: {
+  userId?: string;
   fullName: string;
   email: string;
   schoolGrade: SaasUserProfile['schoolGrade'];
@@ -317,7 +290,7 @@ export function provisionUserOnboarding(params: {
   plan?: SaasPlanTier;
   subjects: UserSubjectWithContents[];
 }): SaasUserProfile {
-  const newUserId = `usr_${Date.now()}`;
+  const targetUserId = params.userId || getActiveUserId() || `usr_${Date.now()}`;
   const planTier = params.plan || 'free';
   const creditsMap: Record<SaasPlanTier, number> = {
     free: 25,
@@ -325,10 +298,10 @@ export function provisionUserOnboarding(params: {
     pro: 999,
   };
 
-  const newUser: SaasUserProfile = {
-    id: newUserId,
+  const provisionedProfile: SaasUserProfile = {
+    id: targetUserId,
     fullName: params.fullName.trim() || 'Estudante',
-    email: params.email.trim() || `aluno_${Date.now()}@reviseai.com.br`,
+    email: params.email.trim(),
     schoolGrade: params.schoolGrade,
     targetExam: params.targetExam.trim() || 'ENEM & Vestibulares',
     termSystem: params.termSystem,
@@ -339,16 +312,11 @@ export function provisionUserOnboarding(params: {
     createdAt: new Date().toISOString(),
   };
 
-  const existingUsers = loadSaasUsers();
-  const updatedUsers = [...existingUsers, newUser];
-  saveSaasUsers(updatedUsers);
-  setActiveUserId(newUserId);
+  setActiveUserId(targetUserId);
 
-  // Salvar disciplinas e conteúdos escolhidos no onboarding
   const finalSubjects = params.subjects.length > 0 ? params.subjects : DEFAULT_USER_SUBJECTS;
-  saveUserSubjects(finalSubjects, newUserId);
+  saveUserSubjects(finalSubjects, targetUserId);
 
-  // Provisionar o Boletim (Gradebook) com as disciplinas escolhidas e o sistema de períodos do aluno
   const periodsCount = getPeriodsCount(params.termSystem);
   const gradebookSubjects: StoredSubjectEntry[] = finalSubjects.map((sub, idx) => ({
     id: sub.id || `sub_${idx}`,
@@ -368,27 +336,25 @@ export function provisionUserOnboarding(params: {
       useWeights: false,
       subjects: gradebookSubjects,
     },
-    newUserId
+    targetUserId
   );
 
-  // Provisionar Agenda semanal inicial baseada nas disciplinas do estudante
   const days = ['Hoje', 'Amanhã', 'Quinta', 'Sexta'];
   const initialAgenda: StoredAgendaEvent[] = days.map((day, idx) => {
     const pickedSub = finalSubjects[idx % finalSubjects.length];
     return {
-      id: `ag_${newUserId}_${idx}`,
+      id: `ag_${targetUserId}_${idx}`,
       day,
       subject: pickedSub.name,
       routine: idx % 2 === 0 ? 'Dia Normal' : 'Revisão Relâmpago',
       status: 'pending',
     };
   });
-  saveAgendaEvents(initialAgenda, newUserId);
+  saveAgendaEvents(initialAgenda, targetUserId);
 
-  // Provisionar Stats iniciais
-  saveUserStats({ masteryScore: 650, streakDays: 1, completedReviews: 0 }, newUserId);
+  saveUserStats({ masteryScore: 650, streakDays: 1, completedReviews: 0 }, targetUserId);
 
-  return newUser;
+  return provisionedProfile;
 }
 
 export function loadUserStats(userId?: string): { masteryScore: number; streakDays: number; completedReviews: number } {
@@ -433,9 +399,6 @@ export function saveGradebookState(state: StoredGradebookState, userId?: string)
   }
 }
 
-/**
- * Identifica matérias do boletim que estão abaixo da média de corte para priorizar no estudo
- */
 export function getAtRiskSubjectsFromGradebook(userId?: string): {
   name: string;
   currentAverage: number;

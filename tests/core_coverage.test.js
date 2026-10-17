@@ -49,4 +49,15 @@ assert.strictEqual(FINTECH_TOKENS.bg, '#000000');
 assert.strictEqual(FINTECH_TOKENS.primary, '#11C76F');
 console.log('  ✅ PASS: 4. Conformidade estética Fintech escuro sem degradês');
 
+// 5. Teste da Regra 1 (AGENTS.md): Autenticação Real Supabase e Zero DEFAULT_DEMO_USER
+const fs = require('fs');
+const path = require('path');
+const authModalFile = path.resolve(__dirname, '../frontend/components/auth/AuthModal.tsx');
+const authContextFile = path.resolve(__dirname, '../frontend/context/AuthContext.tsx');
+assert.ok(fs.existsSync(authModalFile), 'AuthModal.tsx deve existir');
+const authCtxSource = fs.readFileSync(authContextFile, 'utf8');
+assert.ok(!authCtxSource.includes('DEFAULT_DEMO_USER'), 'Proibido usar DEFAULT_DEMO_USER');
+assert.ok(authCtxSource.includes('onAuthStateChange'), 'Deve monitorar onAuthStateChange do Supabase');
+console.log('  ✅ PASS: 5. Autenticação real Supabase Auth (Zero DEFAULT_DEMO_USER)');
+
 console.log('\n🎉 TODOS OS TESTES PASSARAM COM 100% DE SUCESSO!\n');
